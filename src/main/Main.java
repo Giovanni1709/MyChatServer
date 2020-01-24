@@ -13,7 +13,9 @@ public class Main {
 
         try {
             ServerSocket server = new ServerSocket(1337);
-            new User(server.accept(),chatHub01);
+            while (true) {
+                new User(server.accept(),chatHub01);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
