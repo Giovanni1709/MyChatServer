@@ -70,7 +70,4 @@ public class Group {
             return "you are not the owner of the group";
         }
     }
-
-
-
 }

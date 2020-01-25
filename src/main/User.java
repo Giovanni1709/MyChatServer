@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Random;
 
 public class User extends Thread {
 
@@ -17,6 +19,7 @@ public class User extends Thread {
     private BufferedReader reader;
     private boolean activeReading;
     private Group group;
+    private String key;
 
     public String getUsername() {
         return username;
@@ -36,7 +39,11 @@ public class User extends Thread {
     }
 
     public void run() {
-        sendMessage(new HELOMessage("welcome to myChatClient"));
+        key = " ";
+        while (key.contains(" ")) {
+            key = randomString(20);
+        }
+        writer.println(new HELOMessage(key).toStringForm());
         while (username == null) {
             username = verifyUser();
         }
@@ -142,6 +149,7 @@ public class User extends Thread {
                 } else if (message instanceof QUIT) {
                     sendMessage(new OKMessage("goodbye"));
                     activeReading = false;
+                    pingPong.setInactive();
                     hub.removeOnlineUser(this);
                     this.endConnection();
                 }
@@ -189,14 +197,15 @@ public class User extends Thread {
     }
 
     public void sendMessage(Message message) {
-        System.out.println("sent:" + message.toStringForm());
-        writer.println(message.toStringForm());
+        String encryptedMessage = AES.encrypt(message.toStringForm(), key);
+//        System.out.println("sent:" + encryptedMessage);
+        writer.println(encryptedMessage);
     }
 
     public String readMessage() {
         try {
-            String message = reader.readLine();
-            System.out.println("received: " +message);
+            String message = AES.decrypt(reader.readLine(), key);
+//            System.out.println("received: " +message);
             return message;
         } catch (IOException e) {
             System.out.println("Cannot read message");
@@ -235,6 +244,19 @@ public class User extends Thread {
             this.pong = pong;
             this.notify();
         }
-    }
 
+        public void setInactive() {
+            this.active = false;
+        }
+    }
+    public String randomString(int length) {
+        Random random = new Random();
+        byte[] array = new byte[length]; // length is bounded by 7
+        for (int i = 0; i< length ; i++) {
+            random.nextBytes(array);
+        }
+        String generatedString = new String(array, Charset.forName("UTF-8"));
+
+        return generatedString;
+    }
 }
